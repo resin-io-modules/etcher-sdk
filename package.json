@@ -57,6 +57,7 @@
     "cyclic-32": "^1.1.0",
     "debug": "^3.1.0",
     "drivelist": "^9.1.0",
+    "elf-tools": "^1.1.2",
     "file-disk": "^8.0.0",
     "file-type": "^8.0.0",
     "lzma-native": "^6.0.0",
