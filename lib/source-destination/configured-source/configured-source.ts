@@ -16,6 +16,7 @@
 
 import { interact } from 'balena-image-fs';
 import * as _debug from 'debug';
+import { parse } from 'elf-tools';
 import { DiscardDiskChunk, Disk, ReadResult, WriteResult } from 'file-disk';
 import { getPartitions, GPTPartition, MBRPartition } from 'partitioninfo';
 import { promisify } from 'util';
@@ -90,6 +91,99 @@ export class SourceDisk extends Disk {
 
 	protected async _flush(): Promise<void> {
 		// noop
+	}
+}
+
+export class ConfiguredElf extends SourceSource {
+	private disk: SourceDisk;
+	private sectionName: string;
+	private configJson: string;
+
+	constructor({
+		source,
+		sectionName,
+		configJson,
+	}: {
+		source: SourceDestination;
+		sectionName: string;
+		configJson: string;
+	}) {
+		super(source);
+		this.disk = new SourceDisk(source);
+		this.sectionName = sectionName;
+		this.configJson = configJson;
+	}
+
+	public async canRead(): Promise<boolean> {
+		return await this.source.canRead();
+	}
+
+	public async canCreateReadStream(): Promise<boolean> {
+		return await this.canRead();
+	}
+
+	public async getMetadata() {
+		return await this.source.getMetadata();
+	}
+
+	private async configure() {
+		// TODO: elf-tools requires the whole file as a Buffer
+		const size = await this.disk.getCapacity();
+		const { buffer } = await this.disk.read(
+			Buffer.allocUnsafe(size),
+			0,
+			size,
+			0,
+		);
+		const elf = parse(buffer);
+		const section = elf.sections.find(
+			(s) => s.header.name === this.sectionName,
+		);
+		if (section === undefined) {
+			throw new Error(`Could not find section "${this.sectionName}"`);
+		}
+		const configJsonBuffer = Buffer.from(this.configJson);
+		if (configJsonBuffer.length > section.header.size - 2) {
+			throw new Error(
+				`The config.json does not fit in the section "${this.sectionName}": ${configJsonBuffer.length} > ${section.header.size} - 2`,
+			);
+		}
+		const sizeBuffer = Buffer.allocUnsafe(2);
+		if (elf.header.endian === 'lsb') {
+			sizeBuffer.writeUInt16LE(configJsonBuffer.length, 0);
+		} else {
+			sizeBuffer.writeUInt16BE(configJsonBuffer.length, 0);
+		}
+		this.disk.write(sizeBuffer, 0, 2, section.header.offset);
+		this.disk.write(
+			configJsonBuffer,
+			0,
+			configJsonBuffer.length,
+			section.header.offset + 2,
+		);
+	}
+
+	protected async _open(): Promise<void> {
+		await super._open();
+		await this.configure();
+	}
+
+	public async read(
+		buffer: Buffer,
+		bufferOffset: number,
+		length: number,
+		sourceOffset: number,
+	): Promise<ReadResult> {
+		return await this.disk.read(buffer, bufferOffset, length, sourceOffset);
+	}
+
+	public async createReadStream(
+		options: CreateReadStreamOptions,
+	): Promise<NodeJS.ReadableStream> {
+		return await this.disk.getStream(
+			options.start,
+			options.end === undefined ? null : options.end + 1,
+		);
 	}
 }
 
