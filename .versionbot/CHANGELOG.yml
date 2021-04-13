@@ -1,4 +1,15 @@
 - commits:
+    - subject: Working
+      hash: 78fae119ff5e81d9311028e750e13a5205303235
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+      author: Zane Hitchcox
+      nested: []
+  version: 6.2.2
+  date: 2021-04-13T02:22:52.708Z
+- commits:
     - subject: Update node-raspberrypi-usbboot from 0.2.11 to 0.3.0
       hash: de39ec278ff397d1f69bcb4db968486ce59b33b2
       body: |
