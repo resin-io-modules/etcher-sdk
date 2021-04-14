@@ -105,7 +105,7 @@ export class ConfiguredSource extends SourceSource {
 		shouldTrimPartitions,
 		createStreamFromDisk,
 		configure,
-		checksumType = 'xxhash64',
+		checksumType = 'xxhash3',
 		chunkSize = CHUNK_SIZE,
 	}: {
 		source: SourceDestination;

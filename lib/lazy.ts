@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { promisify } from 'util';
-import * as xxhash from 'xxhash';
+import * as xxhash from 'xxhash-addon';
 
 import { once } from './utils';
 
@@ -30,7 +30,7 @@ export const getRaspberrypiUsbboot = once(() => {
 });
 
 export const getXXHash = once(
-	() => require('xxhash') as typeof import('xxhash'),
+	() => require('xxhash-addon') as typeof import('xxhash-addon'),
 );
 
 export const getUnmountDisk = once(() =>

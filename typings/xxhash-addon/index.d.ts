@@ -1,14 +1,14 @@
-declare module 'xxhash' {
+declare module 'xxhash-addon' {
 	import { Hash } from 'crypto';
 	import { Transform } from 'stream';
 
-	class XXHash {
+	class XXHashAddon {
 		constructor(seed: number);
 		public update(buffer: Buffer): void;
 		public digest(encoding: string): string;
 	}
 
-	namespace XXHash {
+	namespace XXHashAddon {
 		export class Stream extends Transform {
 			constructor(seed: number, bits?: number, enc?: string);
 		}
@@ -18,7 +18,13 @@ declare module 'xxhash' {
 			public update(buffer: Buffer): void;
 			public digest(encoding: string): string;
 		}
+
+		export class XXHash3 {
+			constructor(seed: number);
+			public update(buffer: Buffer): void;
+			public digest(encoding?: string): string;
+		}
 	}
 
-	export = XXHash;
+	export = XXHashAddon;
 }
