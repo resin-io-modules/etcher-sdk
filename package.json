@@ -1,6 +1,6 @@
 {
   "name": "etcher-sdk",
-  "version": "6.2.1",
+  "version": "6.2.2",
   "description": "Etcher SDK",
   "author": "Balena.io Ltd <hello@etcher.io> (https://balena.io)",
   "main": "build/index.js",
