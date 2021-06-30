@@ -150,7 +150,9 @@ export abstract class Verifier extends EventEmitter {
 		speed: 0,
 		averageSpeed: 0,
 	};
-
+	/**
+	 * @summary reads the source-destination instance and verifies the checksum matches
+	 */
 	public abstract run(): Promise<void>;
 
 	protected handleEventsAndPipe(
@@ -172,6 +174,10 @@ export abstract class Verifier extends EventEmitter {
 }
 
 export class StreamVerifier extends Verifier {
+	/**
+	 *
+	 * @param size size of the data to read from the source to get the checksum
+	 */
 	constructor(
 		private source: SourceDestination,
 		private checksum: string,
@@ -260,7 +266,16 @@ export interface CreateReadStreamOptions {
 	emitProgress?: boolean;
 	start?: number;
 	end?: number;
+	/**
+	 * @summary buffers must be aligned if using directio
+	 */
 	alignment?: number;
+	/**
+	 * @summary reusable buffers for reading from source
+	 * once the data is read, the buffers are passed to the
+	 * write stream, and once the data has been written to
+	 * all destinations, they are returned to the pool.
+	 */
 	numBuffers?: number;
 }
 
@@ -270,6 +285,10 @@ export interface CreateSparseReadStreamOptions {
 	numBuffers?: number;
 }
 
+/**
+ * @summary Class to implement when you have a new device, file, or other
+ * source/destination you need to write an image to/from
+ */
 export class SourceDestination extends EventEmitter {
 	public static readonly imageExtensions = [
 		'img',
@@ -289,6 +308,9 @@ export class SourceDestination extends EventEmitter {
 	private metadata: Metadata;
 	private isOpen = false;
 
+	/**
+	 * @summary used to associate mimetype with source-destination instance
+	 */
 	public static register(Cls: typeof SourceSource) {
 		if (Cls.mimetype !== undefined) {
 			SourceDestination.mimetypes.set(Cls.mimetype, Cls);
@@ -299,26 +321,56 @@ export class SourceDestination extends EventEmitter {
 		return undefined;
 	}
 
+	/**
+	 * @summary can read from source at any offset
+	 * If this is true, `read` must be implemented
+	 */
 	public async canRead(): Promise<boolean> {
 		return false;
 	}
 
+	/**
+	 * @summary can write to destination at any offset
+	 * If this is true, `write` must be implemented
+	 */
 	public async canWrite(): Promise<boolean> {
 		return false;
 	}
 
+	/**
+	 * @summary can read from source as a stream of buffers, but
+	 * not from any offset, just as a stream
+	 */
 	public async canCreateReadStream(): Promise<boolean> {
 		return false;
 	}
 
+	/**
+	 * @summary can read from source as a sparse stream - meaning each
+	 * chunk will contain a buffer of data and an offset for the location
+	 * of the data that was read. This allows there to be "holes" in the
+	 * data saving bandwidth and time.
+	 *
+	 * e.g. a "dmg" file would have chunks of data missing
+	 */
 	public async canCreateSparseReadStream(): Promise<boolean> {
 		return false;
 	}
 
+	/**
+	 * @summary can write destination as a stream of buffers, but
+	 * not to any offset, just as a stream
+	 */
 	public async canCreateWriteStream(): Promise<boolean> {
 		return false;
 	}
 
+	/**
+	 * @summary can write to destination as a sparse stream - meaning each
+	 * chunk will contain a buffer of data and an offset for the location
+	 * of the data to be written. This allows there to be "holes" in the
+	 * data saving bandwidth and time.
+	 */
 	public async canCreateSparseWriteStream(): Promise<boolean> {
 		return false;
 	}
@@ -334,6 +386,9 @@ export class SourceDestination extends EventEmitter {
 		return {};
 	}
 
+	/**
+	 * @summary same api as `fs.read`
+	 */
 	public async read(
 		_buffer: Buffer,
 		_bufferOffset: number,
@@ -343,6 +398,9 @@ export class SourceDestination extends EventEmitter {
 		throw new NotCapable();
 	}
 
+	/**
+	 * @summary same api as `fs.write`
+	 */
 	public async write(
 		_buffer: Buffer,
 		_bufferOffset: number,
@@ -352,12 +410,18 @@ export class SourceDestination extends EventEmitter {
 		throw new NotCapable();
 	}
 
+	/**
+	 * @summary create read stream from device or file
+	 */
 	public async createReadStream(
 		_options: CreateReadStreamOptions = {},
 	): Promise<NodeJS.ReadableStream> {
 		throw new NotCapable();
 	}
 
+	/**
+	 * @summary create sparse read stream from device or file
+	 */
 	public async createSparseReadStream(
 		_options: CreateSparseReadStreamOptions = {},
 	): Promise<SparseReadable> {
@@ -425,6 +489,9 @@ export class SourceDestination extends EventEmitter {
 		}
 	}
 
+	/**
+	 * @summary tries to get mime type from file name
+	 */
 	private async getMimeTypeFromName(): Promise<string | undefined> {
 		const metadata = await this.getMetadata();
 		if (metadata.name === undefined) {
@@ -435,6 +502,7 @@ export class SourceDestination extends EventEmitter {
 			return 'application/x-apple-diskimage';
 		}
 	}
+
 
 	private async getMimeTypeFromContent(): Promise<string | undefined> {
 		let stream: NodeJS.ReadableStream;
@@ -472,6 +540,11 @@ export class SourceDestination extends EventEmitter {
 		return innerSource.getInnerSource();
 	}
 
+	/**
+	 * @summary guess the type of data (could be a zip file, raw archive, dmg, etc.)
+	 * this method reads the beginning of the source and tries to understand what it is.
+	 * e.g., if it's a zip file, it will create a zip source
+	 */
 	public async getInnerSource(): Promise<SourceDestination> {
 		await this.open();
 		const metadata = await this.getMetadata();
@@ -493,6 +566,10 @@ export class SourceDestination extends EventEmitter {
 		return this.getInnerSourceHelper(mimetype);
 	}
 
+	/**
+	 * @summary check if beginning of file is a partition table, if so, return
+	 * the partitions
+	 */
 	public async getPartitionTable(): Promise<GetPartitionsResult | undefined> {
 		const stream = await this.createReadStream({
 			end: 34 * 512, // GPT partition table size

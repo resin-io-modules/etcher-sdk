@@ -369,6 +369,7 @@ function notUndefined<T>(x: T | undefined): x is T {
 	return x !== undefined;
 }
 
+/** TODO: Why are we getting the highest alignment? Shouldn't we be using the lowest alignment? */
 function getAlignment(...devices: SourceDestination[]): number | undefined {
 	const alignments = devices.map((d) => d.getAlignment()).filter(notUndefined);
 	if (alignments.length) {
@@ -391,6 +392,7 @@ async function pipeRegularSourceToDestination(
 	const emitSourceProgress =
 		sourceMetadata.size === undefined || sourceMetadata.isSizeEstimated;
 	const alignment = getAlignment(source, destination);
+	/** TODO: Why is the highWaterMark affected by alignment? */
 	const highWaterMark = alignment === undefined ? undefined : numBuffers - 1;
 	const [sourceStream, destinationStream] = await Promise.all([
 		source.createReadStream({

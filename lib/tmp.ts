@@ -67,7 +67,6 @@ async function createTmpRoot(): Promise<void> {
 	try {
 		await fs.mkdir(TMP_DIR, { recursive: true });
 	} catch (error) {
-		// the 'recursive' option is only supported on node >= 10.12.0
 		if (error.code === 'EEXIST' && !(await fs.stat(TMP_DIR)).isDirectory()) {
 			await fs.unlink(TMP_DIR);
 			await fs.mkdir(TMP_DIR, { recursive: true });
