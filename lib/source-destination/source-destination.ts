@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+import { Transform as TransformStream } from 'stream';
 import { EventEmitter } from 'events';
 import { ReadResult, WriteResult } from 'file-disk';
 import * as fileType from 'file-type';
 import { getPartitions, GetPartitionsResult } from 'partitioninfo';
 import { extname } from 'path';
-import { arch } from 'process';
-import { Stream as HashStream } from 'xxhash';
+import { XXHash3 } from 'xxhash-addon';
 
 import {
 	AlignedLockableBuffer,
@@ -42,7 +42,29 @@ import {
 } from './progress';
 import { SourceSource } from './source-source';
 
-const BITS = arch === 'x64' || arch === 'aarch64' ? 64 : 32;
+class HashStream extends TransformStream {
+	private _outEnc: string;
+	private _hash: XXHash3;
+	constructor(seed: number, outEnc: string | Buffer) {
+		super();
+		if (outEnc && typeof outEnc !== 'string' && !Buffer.isBuffer(outEnc)) {
+			outEnc = 'buffer';
+		}
+
+		this._outEnc = outEnc as string;
+
+		this._hash = new XXHash3(seed);
+	}
+
+	_transform(chunk: Buffer, _encoding: string, callback: () => void) {
+		this._hash.update(chunk);
+		callback();
+	}
+	_flush(callback: () => void) {
+		this.push(this._hash.digest(this._outEnc));
+		callback();
+	}
+}
 
 export class CountingHashStream extends HashStream {
 	public bytesWritten = 0;
@@ -80,7 +102,7 @@ export const ProgressHashStream = makeClassEmitProgressEvents(
 );
 
 export function createHasher() {
-	const hasher = new ProgressHashStream(XXHASH_SEED, BITS, 'buffer');
+	const hasher = new ProgressHashStream(XXHASH_SEED, 'buffer');
 	hasher.on('finish', async () => {
 		const checksum = (await streamToBuffer(hasher)).toString('hex');
 		hasher.emit('checksum', checksum);

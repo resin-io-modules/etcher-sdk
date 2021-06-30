@@ -44,9 +44,6 @@
   "bugs": {
     "url": "https://github.com/balena-io-modules/etcher-sdk/issues"
   },
-  "optionalDependencies": {
-    "winusb-driver-generator": "^1.2.3"
-  },
   "dependencies": {
     "@balena/node-beaglebone-usbboot": "^1.0.3",
     "@balena/udif": "^1.1.1",
@@ -69,9 +66,9 @@
     "partitioninfo": "^6.0.2",
     "rwmutex": "^1.0.0",
     "tslib": "^2.0.0",
-    "unbzip2-stream": "balena-io-modules/unbzip2-stream#4a54f56a25b58950f9e4277c56db2912d62242e7",
+    "unbzip2-stream": "github:balena-io-modules/unbzip2-stream#4a54f56a25b58950f9e4277c56db2912d62242e7",
     "unzip-stream": "^0.3.0",
-    "xxhash": "^0.3.0",
+    "xxhash-addon": "^1.4.0",
     "yauzl": "^2.9.2",
     "zip-part-stream": "^1.0.3"
   },
@@ -100,6 +97,6 @@
     "typedoc": "^0.17.8",
     "typedoc-plugin-markdown": "2.3.1",
     "typescript": "^4.1.2",
-    "yargs": "^15.4.1"
+    "yargs": "^16.2.0"
   }
 }
