@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import { ReadResult, WriteResult } from 'file-disk';
+import { platform } from 'os';
 import { PassThrough } from 'stream';
 
 import { PROGRESS_EMISSION_INTERVAL } from '../constants';
@@ -354,6 +356,20 @@ export class MultiDestination extends SourceDestination {
 	}
 
 	protected async _close(): Promise<void> {
+		const hasPhysicalDrive = Array.from(this.destinations)
+			.some((destination: BlockDevice) => {
+				return destination.path?.toLowerCase().startsWith('\\\\.\\physicaldrive');
+			});
+		const restartSHWD = platform() === 'win32' && hasPhysicalDrive;
+		// restart ShellHWDetection to prevent "Format Disk" warning popups
+		if (restartSHWD) {
+			// We don't really care if this fails, as it's non-essential
+			await new Promise((res) => {
+				const cp = spawn('sc', ['stop', 'ShellHWDetection']);
+				cp.on('exit', res);
+			})
+		}
+
 		await Promise.all(
 			Array.from(this.destinations).map(async (destination) => {
 				try {
@@ -363,5 +379,12 @@ export class MultiDestination extends SourceDestination {
 				}
 			}),
 		);
+
+		if (restartSHWD) {
+			await new Promise((res) => {
+				const cp = spawn('sc', ['start', 'ShellHWDetection']);
+				cp.on('exit', res);
+			})
+		}
 	}
 }
