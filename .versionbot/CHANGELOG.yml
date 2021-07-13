@@ -1,4 +1,15 @@
 - commits:
+    - subject: prevent warning from linux partitions on windows
+      hash: 0af0cfc3b763cc245fbb98a8887e26e680b6e1ae
+      body: ''
+      footer:
+        Change-type: minor
+        change-type: minor
+      author: Zane Hitchcox
+      nested: []
+  version: 6.3.0
+  date: 2021-07-13T19:07:11.063Z
+- commits:
     - subject: Delete .github directory
       hash: 25e22a2ea50b355a66b35e2a99582367f983099e
       body: ''
